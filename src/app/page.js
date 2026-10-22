@@ -41,6 +41,21 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+function formatDisplayDate(dateStr) {
+  if (!dateStr) return "";
+  try {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    return date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
 // ─── Countdown Timer ──────────────────────────────────────────────────────────
 
 function CountdownTimer({ targetIso }) {
@@ -234,8 +249,11 @@ export default function Home() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Today&apos;s Selection</h2>
                 {data?.date && (
-                  <span className="text-xs font-mono text-zinc-500 bg-zinc-800/50 px-2 py-1 rounded-md">
-                    {data.date}
+                  <span className="text-xs font-medium text-violet-300 bg-violet-950/60 border border-violet-800/50 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                    <svg className="w-3.5 h-3.5 text-violet-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {formatDisplayDate(data.date)}
                   </span>
                 )}
               </div>
