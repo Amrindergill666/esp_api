@@ -33,6 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# daily-anime SQLite database and downloaded images
+/data/
+/public/anime.jpg
+
 # vercel
 .vercel
 

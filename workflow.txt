@@ -1,0 +1,374 @@
+# Build a Production-Ready Daily Anime Image API Using Next.js and AniList GraphQL
+
+## 1. Project Objective
+
+Build a fully working API endpoint in my existing Next.js project that returns one anime image selected using the official AniList GraphQL API:
+
+`https://graphql.anilist.co`
+
+The endpoint must select a different anime image each day, cache that day's selection persistently, and return the exact same image URL for every request during that day.
+
+When the calendar date changes, the endpoint must automatically select and save a new image. It must not require a manual reset, server restart, cron job, or deployment.
+
+**Primary requirement:** One selected image per calendar day, shared across all users and requests.
+
+## 2. First Inspect the Existing Project
+
+Before writing code, inspect the repository and determine:
+
+- Next.js version and whether it uses the App Router (`app/`) or Pages Router (`pages/`).
+- Whether the project uses TypeScript or JavaScript.
+- Existing folder structure, package manager, environment configuration, and coding conventions.
+- Whether a database, persistent key-value store, or caching service is already configured.
+- Existing API routes and reusable utilities that can be reused.
+
+Do not replace the existing project structure or introduce a new framework.
+
+Use the existing conventions. Prefer TypeScript if the project already uses TypeScript.
+
+If a suitable persistent database or cache is already configured, reuse it. If not, choose the simplest appropriate persistent solution compatible with the current deployment platform.
+
+Do not assume that a local file, global variable, or in-memory cache will persist across serverless invocations or multiple instances.
+
+## 3. API Endpoint
+
+Create this endpoint:
+
+`GET /api/daily-anime`
+
+Example local URL:
+
+`http://localhost:3000/api/daily-anime`
+
+The endpoint should return JSON containing the selected image and useful metadata.
+
+Example response:
+
+```json
+{
+  "success": true,
+  "date": "2026-10-22",
+  "image": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/example.jpg",
+  "title": "Example Anime",
+  "animeId": 12345,
+  "imageType": "coverImage",
+  "source": "AniList",
+  "cached": true,
+  "nextRotationAt": "2026-10-23T00:00:00.000Z"
+}
+```
+
+This is an illustrative response shape. Use the actual values returned by AniList and calculate the date and rotation timestamp correctly.
+
+The response must contain a directly usable image URL, not a Base64-encoded image or a URL to another API response.
+
+## 4. AniList GraphQL Integration
+
+Make server-side POST requests to:
+
+`https://graphql.anilist.co`
+
+Use a GraphQL query to retrieve anime entries with the following information:
+
+- Anime ID
+- Anime title, preferably English with romaji fallback
+- Cover image URL
+- Optional banner image URL
+- Optional format and season information
+
+Use the AniList `Media` type with `type: ANIME`.
+
+Prefer entries with valid cover images. The selected image must be a real, usable URL returned by AniList.
+
+Use a query conceptually similar to:
+
+```graphql
+query DailyAnimeCandidates($page: Int, $perPage: Int) {
+  Page(page: $page, perPage: $perPage) {
+    media(type: ANIME, sort: POPULARITY_DESC) {
+      id
+      title {
+        english
+        romaji
+      }
+      coverImage {
+        large
+        extraLarge
+      }
+      bannerImage
+      format
+    }
+  }
+}
+```
+
+Adapt the query to the current AniList schema and verify that it works.
+
+Do not fetch the entire anime database. Request a manageable number of candidates, such as 25–50, and select a random valid candidate from the returned results.
+
+Avoid selecting entries with missing, empty, or invalid cover-image URLs.
+
+Use a server-side timeout and handle network failures, malformed responses, GraphQL errors, HTTP errors, and rate limits gracefully.
+
+Do not expose internal error stacks or sensitive server information to API clients.
+
+## 5. Daily Selection and Caching Logic
+
+Implement the following behavior precisely.
+
+### First request of the day
+
+1. Calculate the current calendar date using one explicitly configured timezone. Default to UTC unless the project already has a clearly established application timezone.
+2. Generate a date key in `YYYY-MM-DD` format.
+3. Look up the stored daily selection using that date key.
+4. If a valid selection already exists, return it without making an unnecessary AniList request.
+5. Otherwise, query AniList for candidates.
+6. Select one eligible anime image.
+7. Persist the selection with its date, anime ID, title, image URL, and creation timestamp.
+8. Return the selected image and metadata.
+
+### Subsequent requests on the same day
+
+- Read the saved selection for today's date.
+- Return the same image URL and anime ID.
+- Do not randomly select a new image.
+- Do not query AniList unnecessarily.
+- Do not overwrite the saved selection merely because another user calls the endpoint.
+
+### When the date changes
+
+- Calculate the new date key automatically.
+- Look up the new day's selection.
+- If it does not exist, select a new anime image and persist it.
+- Return that day's saved selection for all subsequent requests.
+
+The date change must be determined on the server. Never depend on the client's local clock.
+
+The daily image must remain stable even if the server restarts, the deployment scales to multiple instances, or a request comes from another user.
+
+## 6. Persistent Storage and Deployment
+
+Persistent storage is mandatory for production correctness.
+
+Inspect the existing project and select an appropriate implementation:
+
+1. Reuse an existing database or shared persistent cache when available.
+2. If the project already uses Firebase, Supabase, Redis, PostgreSQL, or another suitable service, prefer that existing infrastructure.
+3. If no storage exists, recommend and implement the simplest compatible persistent key-value store or database for the deployment target.
+
+Store records using a deterministic daily key, such as:
+
+`daily-anime:2026-10-22`
+
+A record should contain at least:
+
+- `dateKey`
+- `animeId`
+- `title`
+- `imageUrl`
+- `createdAt`
+- `source`
+
+Ensure that two requests arriving simultaneously on the first request of the day cannot create conflicting daily selections. Use a database transaction, conditional insert, atomic set-if-absent operation, or an equivalent concurrency-safe mechanism.
+
+If two requests race, both must ultimately return the same winning stored selection.
+
+Do not use the following as the only production storage mechanism:
+
+- A module-level variable
+- An ordinary in-memory Map
+- A temporary serverless filesystem
+- A local JSON file that may not be shared between instances
+
+Do not introduce an expensive database unnecessarily. If external storage is required, document the service and its setup.
+
+Provide an `.env.example` containing placeholder configuration variables where needed. Never include actual credentials.
+
+## 7. Image URL and Optional Image Proxy
+
+The primary endpoint should return JSON with the original AniList image URL.
+
+Also evaluate whether a second endpoint would be useful:
+
+`GET /api/daily-anime/image`
+
+If implemented, this endpoint should return the actual image bytes with the appropriate `Content-Type` header and caching headers. It should read the already-selected image URL rather than independently selecting a new image.
+
+Only implement image proxying if it can be done safely and reliably within the existing project's architecture.
+
+If you implement a proxy:
+
+- Allowlist the expected AniList image CDN hostnames.
+- Prevent arbitrary URL fetching and SSRF vulnerabilities.
+- Validate the image content type.
+- Apply a timeout and reasonable response-size limit.
+- Avoid fetching the same image repeatedly when a suitable persistent image cache is available.
+- Preserve the daily-selection behavior.
+
+Do not make the proxy mandatory if returning the original image URL meets the requirement.
+
+## 8. HTTP Caching
+
+Configure sensible HTTP caching headers.
+
+For the JSON endpoint:
+
+- Use `Cache-Control` settings that allow short-lived public caching where appropriate.
+- Prevent a cached response from being served beyond the daily image's rotation boundary.
+- Calculate cache lifetime from the configured timezone's next midnight.
+- Account for CDN caching and stale responses.
+- Do not let a fixed 24-hour TTL cause yesterday's selection to remain cached into the next calendar day.
+
+If the platform's CDN supports it, configure appropriate shared-cache behavior and ensure expiration respects the next rotation time.
+
+The persistent daily record is the source of truth. HTTP caching is an optimization, not the mechanism that guarantees one image per day.
+
+## 9. Error Handling and Fallbacks
+
+Handle these cases:
+
+- AniList is unavailable.
+- AniList returns HTTP 429.
+- GraphQL returns errors.
+- No valid anime images are found.
+- The database or cache is unavailable.
+- A saved record is malformed or incomplete.
+- The external request times out.
+- Concurrent requests attempt to initialize the daily record.
+
+If today's record already exists and is valid, return it even if AniList is temporarily unavailable.
+
+If no record exists and AniList fails, do not pretend that a new selection was successfully saved.
+
+Return a meaningful HTTP status code and a small JSON error response.
+
+If a persistent storage failure prevents enforcing the one-image-per-day guarantee, report the failure instead of silently falling back to inconsistent per-instance memory caching.
+
+Do not silently reuse yesterday's image as today's official selection. If a stale fallback is deliberately implemented, mark it clearly in the response.
+
+## 10. AniList Rate Limits
+
+Minimize upstream requests by checking persistent storage before contacting AniList.
+
+Respect HTTP 429 responses and any `Retry-After` information. Avoid aggressive retries and unnecessary polling.
+
+The API should normally need only one successful candidate query when initializing a new daily record. Regular requests should use the saved record.
+
+Consult the official rate-limit documentation:
+
+https://anilist.gitbook.io/anilist-apiv2-docs/docs/guide/rate-limiting
+
+Do not run a scheduled job unless the existing architecture genuinely requires one.
+
+## 11. Optional Selection Improvements
+
+Keep the initial implementation simple and functional. If practical, support the following through environment configuration or a well-defined configuration file:
+
+- Preferred image type: `coverImage` or `bannerImage`
+- Candidate pool size
+- Application timezone
+- Optional exclusion of previously selected anime IDs
+- Optional minimum popularity threshold
+
+Do not add unnecessary API parameters, user authentication, an admin dashboard, or complex dependencies.
+
+For daily uniqueness, if history is enabled, avoid recently selected anime when possible. If no eligible alternatives exist, fall back gracefully.
+
+Without history, a different image is not mathematically guaranteed each day. If the product requirement is strictly to avoid repeating yesterday's image, persist yesterday's anime ID and exclude it from the next selection.
+
+## 12. Testing Requirements
+
+Write automated tests using the project's existing test framework, or introduce a minimal suitable test setup if none exists.
+
+Test the following cases:
+
+1. The first request creates today's selection.
+2. Repeated requests return the same anime ID and image URL.
+3. Multiple concurrent requests initialize only one daily selection.
+4. A simulated date change causes a new daily selection.
+5. A server restart does not lose the saved selection.
+6. An AniList failure does not break access to an existing saved selection.
+7. Missing image URLs are excluded.
+8. A malformed stored record is handled safely.
+9. The API returns appropriate error responses if storage or AniList fails.
+10. Cache headers do not permit yesterday's response to remain valid after midnight.
+11. Timezone and daylight-saving transitions are handled correctly if a non-UTC timezone is configured.
+
+Mock AniList and the database in unit tests. Do not make real external API calls for every automated test.
+
+Provide a reproducible manual test using `curl`.
+
+Example:
+
+```bash
+curl -i http://localhost:3000/api/daily-anime
+```
+
+Call the endpoint several times and verify that the selected image remains unchanged.
+
+For the date-change test, use an injectable clock or test-only date override rather than waiting until midnight. Do not expose an unauthenticated production endpoint that lets arbitrary callers change the date or reset the cache.
+
+## 13. Documentation
+
+Create or update a concise README section explaining:
+
+- The endpoint URL.
+- The response schema.
+- How the daily image is selected.
+- Which timezone determines the day.
+- Which persistent storage solution is used.
+- How to configure environment variables.
+- How to run the application locally.
+- How to deploy it.
+- How to test daily rotation.
+- Any external service setup required.
+- Any limitations regarding image availability or repeated selections.
+
+Explain that the image itself is hosted by AniList unless an image proxy or persistent image storage is explicitly implemented.
+
+## 14. Implementation Constraints
+
+- Work inside the existing repository.
+- Use the appropriate Next.js Route Handler or API Route based on the current project.
+- Use the existing package manager and coding style.
+- Prefer small, maintainable modules with clear responsibilities.
+- Add TypeScript types where appropriate.
+- Validate external API data before storing it.
+- Keep database credentials and other secrets server-side.
+- Avoid unnecessary dependencies.
+- Do not rewrite unrelated files or break existing routes.
+- Do not hardcode sample anime data as the real production response.
+- Do not claim that caching works unless it has been tested.
+
+## 15. Final Acceptance Criteria
+
+The implementation is complete only when:
+
+- `GET /api/daily-anime` works.
+- It returns a valid image URL from a real AniList result.
+- The first successful request selects and saves one anime image for the current day.
+- Every subsequent request for that day returns the exact same saved selection.
+- A new date triggers a new selection automatically.
+- The selection survives server restarts and works across application instances.
+- Concurrent first requests cannot establish conflicting selections.
+- Failures are handled without corrupting the daily record.
+- Automated tests and a manual `curl` test pass.
+- The documentation and required environment configuration are complete.
+
+## 16. Execution Instructions for Antigravity
+
+Do not stop after generating a plan. Inspect the repository, implement the complete feature, run the relevant tests, fix any failures, and verify the endpoint locally where the environment permits.
+
+Before finishing, report:
+
+1. Files created or modified.
+2. The storage solution selected and why.
+3. Any required environment variables.
+4. The local endpoint URL.
+5. Test commands and their actual results.
+6. Any deployment configuration still required.
+7. Any acceptance criteria that could not be verified.
+
+Do not fabricate test results or claim successful deployment without evidence.
+
+**Priority order:** correctness of daily selection → persistent storage → concurrency safety → reliable error handling → efficient caching → optional enhancements.
