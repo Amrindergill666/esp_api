@@ -19,7 +19,9 @@ import {
   COMPRESS_JPEG_QUALITY,
 } from "./config.js";
 
-const DATA_IMAGES_DIR = join(process.cwd(), "data", "images");
+const DATA_IMAGES_DIR = process.env.VERCEL
+  ? join("/tmp", "images")
+  : join(process.cwd(), "data", "images");
 const PUBLIC_DIR = join(process.cwd(), "public");
 const PUBLIC_IMAGE_PATH = join(PUBLIC_DIR, "anime.jpg");
 

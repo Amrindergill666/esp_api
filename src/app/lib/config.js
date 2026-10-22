@@ -32,9 +32,10 @@ export const HISTORY_LOOKBACK_DAYS = parseInt(
   10
 );
 
-/** Path to the SQLite database file. */
+/** Path to the SQLite database file. Uses /tmp/ in Vercel serverless environment. */
 export const DB_PATH =
-  process.env.DAILY_ANIME_DB_PATH || "./data/daily-anime.db";
+  process.env.DAILY_ANIME_DB_PATH ||
+  (process.env.VERCEL ? "/tmp/daily-anime.db" : "./data/daily-anime.db");
 
 /** AniList GraphQL endpoint. */
 export const ANILIST_URL = "https://graphql.anilist.co";
