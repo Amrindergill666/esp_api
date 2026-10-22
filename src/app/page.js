@@ -193,7 +193,7 @@ export default function Home() {
       <header className="border-b border-zinc-800/60 backdrop-blur-md bg-zinc-950/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-600/20">
+            <div className="w-9 h-9 rounded-lg bg-linear-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-600/20">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
@@ -241,7 +241,7 @@ export default function Home() {
               </div>
 
               {status === "loading" && !data ? (
-                <div className="aspect-[3/4] max-h-[480px] rounded-lg shimmer" />
+                <div className="aspect-3/4 max-h-120 rounded-lg shimmer" />
               ) : data ? (
                 <div className="flex flex-col sm:flex-row gap-6">
                   <a
@@ -249,7 +249,7 @@ export default function Home() {
                     target="_blank"
                     rel="noopener noreferrer"
                     title="Click to open direct AniList CDN image in new tab"
-                    className="relative group flex-shrink-0 cursor-pointer block"
+                    className="relative group shrink-0 cursor-pointer block"
                   >
                     <div className="overflow-hidden rounded-lg shadow-2xl shadow-black/50 w-full sm:w-64">
                       <img
@@ -259,7 +259,7 @@ export default function Home() {
                       />
                     </div>
                     {/* Image overlay on hover */}
-                    <div className="absolute inset-0 rounded-lg bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                    <div className="absolute inset-0 rounded-lg bg-linear-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                       <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-medium">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
@@ -313,7 +313,7 @@ export default function Home() {
                           </button>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 bg-emerald-950/80 text-emerald-300 border border-emerald-800/50 rounded text-[10px] font-mono font-medium flex-shrink-0">
+                          <span className="px-1.5 py-0.5 bg-emerald-950/80 text-emerald-300 border border-emerald-800/50 rounded text-[10px] font-mono font-medium shrink-0">
                             LOCAL DISK
                           </span>
                           <p className="font-mono text-xs text-zinc-300 break-all select-all">
@@ -327,7 +327,7 @@ export default function Home() {
                               href={data.upstreamImageUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-zinc-400 hover:text-zinc-200 underline ml-2 flex-shrink-0"
+                              className="text-zinc-400 hover:text-zinc-200 underline ml-2 shrink-0"
                             >
                               View upstream
                             </a>
@@ -365,7 +365,7 @@ export default function Home() {
                   href={data.image}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="glow-btn px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-lg text-sm font-medium text-white shadow-lg shadow-emerald-600/20 transition-all duration-200"
+                  className="glow-btn px-5 py-2.5 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-lg text-sm font-medium text-white shadow-lg shadow-emerald-600/20 transition-all duration-200"
                 >
                   <span className="flex items-center gap-2">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -382,7 +382,7 @@ export default function Home() {
                 href="/anime.jpg"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-lg text-sm font-medium text-white shadow-lg shadow-violet-600/20 transition-all duration-200"
+                className="px-5 py-2.5 bg-lineear-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-lg text-sm font-medium text-white shadow-lg shadow-violet-600/20 transition-all duration-200"
               >
                 <span className="flex items-center gap-2">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -471,7 +471,7 @@ export default function Home() {
                     <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Response Headers</p>
                     {Object.entries(imageProxyHeaders).map(([k, v]) => (
                       <div key={k} className="flex gap-2 text-xs font-mono">
-                        <span className="text-violet-400 flex-shrink-0">{k}:</span>
+                        <span className="text-violet-400 shrink-0">{k}:</span>
                         <span className="text-zinc-400 truncate">{v}</span>
                       </div>
                     ))}
@@ -527,7 +527,7 @@ export default function Home() {
                 <div className="space-y-2 custom-scrollbar max-h-64 overflow-y-auto">
                   {Object.entries(headers).map(([key, value]) => (
                     <div key={key} className="flex gap-2 text-xs font-mono group">
-                      <span className="text-violet-400 flex-shrink-0 min-w-0">{key}<span className="text-zinc-600">:</span></span>
+                      <span className="text-violet-400 shrink-0 min-w-0">{key}<span className="text-zinc-600">:</span></span>
                       <span className="text-zinc-400 truncate group-hover:text-zinc-200 transition-colors cursor-default" title={value}>
                         {value}
                       </span>
@@ -608,7 +608,7 @@ function StatCard({ label, value, color }) {
 function EndpointItem({ method, path, description, badge }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded text-xs font-bold font-mono flex-shrink-0 mt-0.5">
+      <span className="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded text-xs font-bold font-mono shrink-0 mt-0.5">
         {method}
       </span>
       <div className="min-w-0 flex-1">
