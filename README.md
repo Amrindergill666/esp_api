@@ -168,22 +168,72 @@ npm start
 
 The `./data/` directory must be persistent and writable.
 
+## Song & Album Artwork API (iTunes)
+
+Searches iTunes by song title OR album name (and optional artist) and returns the small album artwork thumbnail link, custom-sized thumbnail links, metadata, or ESP32-ready image bytes.
+
+### Endpoints
+
+#### `GET /api/song` (or `GET /api/album`, `GET /api/itunes`)
+
+Returns the album/song artwork thumbnail.
+
+**Search by Song Name:**
+```bash
+curl "http://localhost:3000/api/song?song=Blinding+Lights&artist=The+Weeknd&size=130"
+```
+
+**Search by Album Name:**
+```bash
+curl "http://localhost:3000/api/album?album=After+Hours&artist=The+Weeknd&size=130"
+# Or through /api/song:
+curl "http://localhost:3000/api/song?album=After+Hours&artist=The+Weeknd&size=130"
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `song` / `title` | string | Song title |
+| `album` | string | Album name (e.g. `After Hours`, `Divide`) |
+| `artist` | string | Artist name (optional) |
+| `term` | string | General search term |
+| `size` | number | Thumbnail dimension (`60`, `100`, `130`, `240`, `500`) |
+| `image=true` / `format=image` | boolean | Streams binary JPEG bytes directly (`Content-Type: image/jpeg`) |
+| `raw=true` / `format=link` | boolean | Returns ONLY the plain text JPG link (`text/plain`) |
+| `format=json` | string | Returns JSON metadata |
+| `redirect` | boolean | Defaults to `true`: returns HTTP 302 redirect directly to the JPG |
+
+#### `GET /api/song/image` (or `GET /api/album/image`)
+
+Directly streams the artwork as an **ESP32-optimized baseline JPEG** on the fly.
+Supports `?song=...`, `?album=...`, `?w=130&h=130&q=75` for hardware display resolutions.
+
+---
+
 ## Architecture
 
 ```
 src/app/
 ├── api/
-│   └── daily-anime/
-│       ├── route.js          # GET /api/daily-anime (JSON)
-│       └── image/
-│           └── route.js      # GET /api/daily-anime/image (proxy)
+│   ├── daily-anime/
+│   │   ├── route.js          # GET /api/daily-anime (JSON)
+│   │   └── image/
+│   │       └── route.js      # GET /api/daily-anime/image (proxy)
+│   ├── song/
+│   │   ├── route.js          # GET & POST /api/song (JSON / plain text)
+│   │   └── image/
+│   │       └── route.js      # GET /api/song/image (baseline JPEG stream)
+│   └── itunes/
+│       └── route.js          # Alias for /api/song
 ├── lib/
 │   ├── config.js             # Configuration & environment variables
 │   ├── db.js                 # SQLite persistence layer
 │   ├── anilist.js            # AniList GraphQL client
-│   └── daily-anime.js        # Core daily selection logic
+│   ├── daily-anime.js        # Core daily selection logic
+│   ├── itunes.js             # iTunes search client, caching & artwork sizer
+│   └── image-store.js        # ESP32 baseline JPEG compression (Sharp)
 └── __tests__/
-    └── daily-anime.test.js   # Comprehensive test suite
+    ├── daily-anime.test.js   # AniList tests
+    └── song.test.js          # Song & iTunes tests
 ```
 
 ## Limitations
